@@ -1,41 +1,125 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function DetallePelicula() {
+  const { id } = useParams(); // Obtiene el ID de la película desde la URL
+  const [pelicula, setPelicula] = useState(null);
   const [seleccionados, setSeleccionados] = useState([]);
   const asientos = Array.from({ length: 150 }, (_, i) => i + 1);
 
+  // 1. Cargar la información de la película desde Supabase
+  useEffect(() => {
+    const cargarInfo = async () => {
+      const { data, error } = await supabase
+        .from('peliculas')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (data) setPelicula(data);
+      if (error) console.error("Error cargando película:", error.message);
+    };
+    cargarInfo();
+  }, [id]);
+
+  // 2. Función para seleccionar/deseleccionar asientos
   const toggleAsiento = (num) => {
     setSeleccionados(prev => 
       prev.includes(num) ? prev.filter(a => a !== num) : [...prev, num]
     );
   };
 
+  // 3. Función para guardar la reserva en la base de datos
+  const manejarReserva = async () => {
+    try {
+      const { error } = await supabase
+        .from('reservas') // Asegúrate de crear esta tabla en Supabase
+        .insert([
+          { 
+            pelicula_id: id, 
+            asientos: seleccionados.join(', ') // Guarda los números como texto: "1, 2, 5"
+          }
+        ]);
+
+      if (error) throw error;
+
+      alert(`¡Reserva exitosa para los asientos: ${seleccionados.join(', ')}!`);
+      setSeleccionados([]); // Limpia la selección después de reservar
+    } catch (error) {
+      alert("Error al guardar la reserva: " + error.message);
+    }
+  };
+
+  if (!pelicula) return <div style={{background: '#111', color: '#fff', height: '100vh', textAlign: 'center', padding: '50px'}}>Cargando...</div>;
+
   return (
-    <div style={{ padding: '20px', background: '#111', color: '#fff', minHeight: '100vh', textAlign: 'center' }}>
-      <h2>Selecciona tus asientos para Intensamente 2</h2>
-      <div style={{ background: '#555', height: '10px', width: '70%', margin: '20px auto', borderRadius: '5px' }}>PANTALLA</div>
+    <div style={{ padding: '20px', background: '#111', color: '#fff', minHeight: '100vh', textAlign: 'center', fontFamily: 'Arial' }}>
+      <div style={{ textAlign: 'left', marginBottom: '10px' }}>
+        <Link to="/" style={{ color: '#e50914', textDecoration: 'none', fontWeight: 'bold' }}>⬅ Volver a Cartelera</Link>
+      </div>
+
+      <h2 style={{ margin: '10px 0' }}>Selecciona tus asientos para: <span style={{color: '#e50914'}}>{pelicula.titulo}</span></h2>
       
+      {/* Pantalla del cine */}
       <div style={{ 
-        display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', 
-        gap: '5px', maxWidth: '500px', margin: '0 auto' 
+        background: '#555', 
+        height: '8px', 
+        width: '70%', 
+        margin: '40px auto 10px', 
+        borderRadius: '10px',
+        boxShadow: '0px 0px 20px rgba(255,255,255,0.3)' 
+      }}></div>
+      <p style={{fontSize: '12px', color: '#666', marginBottom: '30px'}}>PANTALLA</p>
+      
+      {/* Cuadrícula de 150 asientos */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(15, 1fr)', 
+        gap: '6px', 
+        maxWidth: '550px', 
+        margin: '0 auto' 
       }}>
         {asientos.map(num => (
           <div 
             key={num}
             onClick={() => toggleAsiento(num)}
             style={{
-              width: '25px', height: '25px', borderRadius: '4px', cursor: 'pointer',
-              background: seleccionados.includes(num) ? '#e50914' : '#444',
-              fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              width: '28px', 
+              height: '28px', 
+              borderRadius: '4px', 
+              cursor: 'pointer',
+              background: seleccionados.includes(num) ? '#e50914' : '#333',
+              fontSize: '10px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              transition: '0.2s',
+              border: '1px solid #222'
             }}
           >
             {num}
           </div>
         ))}
       </div>
-      <div style={{ marginTop: '20px' }}>
-        <p>Asientos seleccionados: {seleccionados.length}</p>
-        <button style={{ padding: '10px 20px', background: '#e50914', color: '#fff', border: 'none', borderRadius: '5px' }}>
+
+      <div style={{ marginTop: '30px', background: '#1a1a1a', padding: '20px', borderRadius: '10px', display: 'inline-block' }}>
+        <p style={{ margin: '0 0 10px 0' }}>Has seleccionado: **{seleccionados.length}** asientos</p>
+        <p style={{ fontSize: '12px', color: '#aaa', marginBottom: '15px' }}>Números: {seleccionados.sort((a,b)=>a-b).join(', ') || 'Ninguno'}</p>
+        
+        <button 
+          onClick={manejarReserva} // <--- Ahora el botón llama a la función
+          disabled={seleccionados.length === 0}
+          style={{ 
+            padding: '12px 25px', 
+            background: seleccionados.length > 0 ? '#e50914' : '#555', 
+            color: '#fff', 
+            border: 'none', 
+            borderRadius: '5px',
+            fontWeight: 'bold',
+            cursor: seleccionados.length > 0 ? 'pointer' : 'not-allowed'
+          }}
+        >
           RESERVAR AHORA
         </button>
       </div>

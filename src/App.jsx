@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import DetallePelicula from './pages/DetallePelicula';
 import Validar from './pages/Validar';
 import Admin from './pages/Admin';
+import CineBot from './components/CineBot';
 
 function App() {
   return (
@@ -20,6 +21,9 @@ function App() {
         {/* Panel administrativo */}
         <Route path="/admin" element={<Admin />} />
       </Routes>
+
+      {/* CineBot - Asistente inteligente disponible en todas las páginas */}
+      <CineBot />
     </BrowserRouter>
   );
 }

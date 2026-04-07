@@ -36,28 +36,34 @@ export default function DetallePelicula() {
 
     const PRECIO_ENTRADA = 15000;
     const totalCalculado = seleccionados.length * PRECIO_ENTRADA;
+    
+    // Generar código único de 8 caracteres
+    const codigoUnico = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     try {
       const { data, error } = await supabase
         .from('tiquetes')
         .insert([
           { 
-            pelicula_id: id, // El ID ahora es un UUID compatible
+            pelicula_id: id,
             asientos_seleccionados: seleccionados.join(', '),
             pago_total: totalCalculado,
-            estado: 'valido'
+            estado: 'valido',
+            codigo_unico: codigoUnico
           }
         ])
         .select();
 
       if (error) throw error;
 
-      // Cumplimos el requerimiento de mostrar el tiquete generado
+      // Mostrar el tiquete generado
       alert(`
         🎟️ ¡TIQUETE EXITOSO!
-        Código: ${data[0].codigo_unico}
-        Asientos: ${data[0].asientos_seleccionados}
+        Código: ${codigoUnico}
+        Asientos: ${seleccionados.join(', ')}
         Total: $${totalCalculado.toLocaleString()}
+        
+        ¡Disfruta la película!
       `);
       
       setSeleccionados([]);

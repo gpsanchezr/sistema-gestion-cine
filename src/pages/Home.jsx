@@ -45,22 +45,42 @@ export default function Home() {
   }
 
   return (
-    <div style={{ background: '#000', minHeight: '100vh', color: '#fff', fontFamily: 'Arial, sans-serif' }}>
-      <div style={{ padding: '50px 20px', textAlign: 'center' }}>
-        <h1 style={{ color: '#e50914', fontSize: '3rem', fontWeight: 'bold', margin: '0' }}>Cartelera de Cine</h1>
-        <p style={{ color: '#aaa' }}>Selecciona una película para ver las funciones disponibles</p>
+    <div style={{ background: 'var(--dark-bg)', minHeight: '100vh', color: '#fff', fontFamily: 'Poppins, sans-serif' }}>
+      <div style={{ padding: '60px 20px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.1), rgba(26, 26, 26, 0.8))', backdropFilter: 'blur(10px)' }}>
+        <h1 style={{ color: 'var(--netflix-red)', fontSize: '3.5rem', fontWeight: 'bold', margin: '0', textShadow: '0 0 30px rgba(229, 9, 20, 0.5)' }}>🎬 Cartelera de Cine</h1>
+        <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1.2rem', margin: '10px 0 0 0' }}>Descubre las mejores películas del momento</p>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {peliculas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}>
-            <span style={{ fontSize: '4rem' }}>🎬</span>
-            <h3>No hay películas en la base de datos</h3>
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '80px 20px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(15px)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            margin: '40px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🎭</div>
+            <h3 style={{ color: 'white', margin: '0 0 20px 0' }}>No hay películas disponibles</h3>
             <button 
-                onClick={loadPeliculas} 
-                style={{ marginTop: '20px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e50914', color: '#fff', border: 'none', borderRadius: '4px' }}
+              onClick={loadPeliculas} 
+              style={{ 
+                padding: '12px 24px', 
+                background: 'linear-gradient(135deg, #e50914, #b20710)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+              onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
             >
-                Reintentar
+              🔄 Reintentar
             </button>
           </div>
         ) : (
@@ -71,31 +91,45 @@ export default function Home() {
                 to={`/pelicula/${pelicula.id}`}
                 className="movie-card"
               >
-                <div style={{ position: 'relative', height: '380px' }}>
-                  {pelicula.poster_url ? (
+                <div className="poster-container">
+                  {pelicula.imagen_url ? (
                     <img 
-                      src={pelicula.poster_url} 
+                      src={pelicula.imagen_url} 
                       alt={pelicula.titulo} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', background: '#333', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      <span style={{ color: '#666' }}>Sin Imagen</span>
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      background: 'linear-gradient(135deg, #333, #555)', 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      alignItems: 'center',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      fontSize: '1.5rem'
+                    }}>
+                      🎬
                     </div>
                   )}
                   {pelicula.clasificacion && (
-                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(229, 9, 20, 0.85)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                        {pelicula.clasificacion}
+                    <div className="rating-badge">
+                      {pelicula.clasificacion}
                     </div>
                   )}
                 </div>
                 
-                <div style={{ padding: '15px' }}>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#fff' }}>{pelicula.titulo}</h3>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <p style={{ color: '#aaa', fontSize: '0.9rem', margin: '0' }}>{pelicula.genero}</p>
-                    <p style={{ color: '#eee', fontSize: '0.8rem', margin: '0' }}>{pelicula.duracion} min</p>
+                <div className="content">
+                  <h3>{pelicula.titulo}</h3>
+                  <div className="meta">
+                    <span className="genre">{pelicula.genero}</span>
+                    <span className="duration">{pelicula.duracion} min</span>
                   </div>
+                  {pelicula.descripcion && (
+                    <p className="description">{pelicula.descripcion}</p>
+                  )}
+                  <button className="action-btn">
+                    🎫 Ver Asientos
+                  </button>
                 </div>
               </Link>
             ))}

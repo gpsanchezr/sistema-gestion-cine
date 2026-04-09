@@ -8,7 +8,7 @@ const Login = () => {
   const { login, register, setCiudadGlobal, isAuthenticated, ciudad } = useAuth();
 
   const [showCityModal, setShowCityModal] = useState(!ciudad);
-  const [isLogin, setIsLogin] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -50,6 +50,7 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[A-Z]).{6,}$/;
 
     if (!formData.email) {
       newErrors.email = 'Email requerido';
@@ -59,18 +60,13 @@ const Login = () => {
 
     if (!formData.password) {
       newErrors.password = 'Contraseña requerida';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Mínimo 6 caracteres';
+    } else if (!passwordRegex.test(formData.password)) {
+      newErrors.password = 'La contraseña debe tener mínimo 6 caracteres y al menos una letra mayúscula';
     }
 
-    if (!isLogin) {
+    if (isRegistering) {
       if (!formData.name) {
         newErrors.name = 'Nombre requerido';
-      }
-      if (!formData.confirmPassword) {
-        newErrors.confirmPassword = 'Confirmar contraseña requerida';
-      } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Las contraseñas no coinciden';
       }
     }
 
@@ -86,21 +82,33 @@ const Login = () => {
       return;
     }
 
-    if (isLogin) {
-      const result = await login(formData.email, formData.password, role);
+    if (!isRegistering) {
+      const result = await login(formData.email, formData.password);
       if (result?.error) {
         setAuthMessage(result.error);
         return;
+      }
+
+      // Después del login exitoso, verificar el rol y navegar
+      if (result?.success) {
+        // El contexto Auth ya debería tener el usuario actualizado
+        // Verificar si el rol es admin para navegar a /admin
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (currentUser.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/home');
+        }
       }
     } else {
-      const result = await register(formData.name, formData.email, formData.password);
+      const result = await register(formData.name, formData.email, formData.password, role);
       if (result?.error) {
         setAuthMessage(result.error);
         return;
       }
+      setAuthMessage(result.message || 'Usuario registrado exitosamente. Revisa tu email para confirmar.');
+      return; // No navegar automáticamente
     }
-
-    navigate('/home');
   };
 
   return (
@@ -128,26 +136,10 @@ const Login = () => {
       <div className="login-box glass">
         <div className="login-header">
           <h1>🎬 Cine Premium</h1>
-          <p>{isLogin ? 'Inicio de Sesión' : 'Registro'} con estilo glassmorphism</p>
+          <p>{isRegistering ? 'Registro' : 'Inicio de Sesión'}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {!isLogin && (
-            <div className="form-group">
-              <label htmlFor="name">Nombre</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                placeholder="Tu nombre completo"
-                value={formData.name}
-                onChange={handleInputChange}
-                className={errors.name ? 'error' : ''}
-              />
-              {errors.name && <span className="error-message">{errors.name}</span>}
-            </div>
-          )}
-
           <div className="form-group">
             <label htmlFor="email">Correo</label>
             <input
@@ -161,6 +153,22 @@ const Login = () => {
             />
             {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
+
+          {isRegistering && (
+            <div className="form-group">
+              <label htmlFor="name">Nombre</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Tu nombre"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={errors.name ? 'error' : ''}
+              />
+              {errors.name && <span className="error-message">{errors.name}</span>}
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
@@ -176,25 +184,9 @@ const Login = () => {
             {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
-          {!isLogin && (
+          {isRegistering && (
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmar Contraseña</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                placeholder="Repite tu contraseña"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={errors.confirmPassword ? 'error' : ''}
-              />
-              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-            </div>
-          )}
-
-          {isLogin && (
-            <div className="form-group">
-              <label htmlFor="role">Entrar como</label>
+              <label htmlFor="role">Credenciales</label>
               <select
                 id="role"
                 value={role}
@@ -204,32 +196,33 @@ const Login = () => {
                 <option value="usuario">Usuario</option>
                 <option value="admin">Administrador</option>
               </select>
-              <span className="hint">Selecciona administrador sólo si tu cuenta tiene ese rol.</span>
+              <span className="hint">Selecciona el rol que deseas para tu cuenta.</span>
             </div>
           )}
 
           {authMessage && <div className="auth-message">{authMessage}</div>}
 
           <button type="submit" className="submit-btn">
-            {isLogin ? 'Iniciar Sesión' : 'Registrarme'}
+            {isRegistering ? 'Registrarme' : 'Iniciar Sesión'}
           </button>
         </form>
 
         <div className="toggle-auth">
           <p>
-            {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
-            <button
-              type="button"
-              className="toggle-btn"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+            {isRegistering ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
+            <a
+              href="#"
+              className="toggle-link"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsRegistering(!isRegistering);
+                setFormData({ name: '', email: '', password: '' });
                 setErrors({});
                 setAuthMessage('');
               }}
             >
-              {isLogin ? 'Regístrate aquí' : 'Ir al login'}
-            </button>
+              {isRegistering ? 'Ir al login' : 'Regístrate aquí'}
+            </a>
           </p>
         </div>
       </div>

@@ -411,7 +411,7 @@
 
 .greeting-bubble {
   position: absolute;
-  top: -80px;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   background: var(--glass);
@@ -430,21 +430,8 @@
     transform: translateX(-50%) translateY(0px);
   }
   50% {
-    transform: translateX(-50%) translateY(-5px);
+    transform: translateX(-50%) translateY(5px);
   }
-}
-
-.greeting-bubble::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid var(--neon-cyan);
 }
 
 .greeting-text {

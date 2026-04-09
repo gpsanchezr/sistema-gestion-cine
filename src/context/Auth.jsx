@@ -48,6 +48,35 @@ export const AuthProvider = ({ children }) => {
     }
 
     setLoading(false);
+
+    // Listener para cambios de estado de autenticación de Supabase
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Usuario inició sesión, obtener perfil
+        const { data: profile } = await supabase
+          .from('perfiles')
+          .select('role, nombre')
+          .eq('id', session.user.id)
+          .single();
+
+        const userData = {
+          id: session.user.id,
+          name: profile?.nombre || session.user.user_metadata?.name || session.user.email.split('@')[0],
+          email: session.user.email,
+          role: profile?.role || 'usuario'
+        };
+
+        setUser(userData);
+        setIsAuthenticated(true);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('user');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -103,59 +132,96 @@ export const AuthProvider = ({ children }) => {
     saveLocalProfile(profile);
   };
 
-  const login = async (email, password, role = 'usuario') => {
-    const profile = await fetchProfile(email);
+  const login = async (email, password) => {
+    try {
+      // Primero hacer login con Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (profile) {
-      if (profile.password && profile.password !== password) {
-        return { error: 'Credenciales inválidas' };
+      if (error) {
+        return { error: error.message };
       }
 
-      const userData = {
-        id: profile.id || Math.random().toString(36).substr(2, 9),
-        name: profile.name || email.split('@')[0],
-        email: profile.email,
-        role: profile.role || role
-      };
+      if (data.user) {
+        // Ahora consultar la tabla perfiles para obtener el rol y nombre
+        const { data: profile, error: profileError } = await supabase
+          .from('perfiles')
+          .select('role, nombre')
+          .eq('id', data.user.id)
+          .single();
 
-      setUser(userData);
-      setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return { success: true };
+        if (profileError) {
+          console.warn('Error fetching profile:', profileError.message);
+          // Si no hay perfil, no crear uno automáticamente - dar error
+          await supabase.auth.signOut();
+          return { error: 'Perfil de usuario no encontrado. Contacta al administrador.' };
+        } else {
+          const userData = {
+            id: data.user.id,
+            name: profile?.nombre || data.user.user_metadata?.name || data.user.email.split('@')[0],
+            email: data.user.email,
+            role: profile.role
+          };
+
+          setUser(userData);
+          setIsAuthenticated(true);
+          localStorage.setItem('user', JSON.stringify(userData));
+          return { success: true };
+        }
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      return { error: 'Error interno del servidor' };
     }
 
-    return { error: 'Usuario no encontrado. Regístrate primero.' };
+    return { error: 'Error desconocido' };
   };
 
-  const register = async (name, email, password) => {
-    const profile = await fetchProfile(email);
+  const register = async (name, email, password, role = 'usuario') => {
+    try {
+      // Registrar con Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+          }
+        }
+      });
 
-    if (profile) {
-      return { error: 'Ya existe un usuario con ese correo.' };
+      if (error) {
+        return { error: error.message };
+      }
+
+      if (data.user) {
+        // Crear perfil en la tabla perfiles
+        const { error: profileError } = await supabase
+          .from('perfiles')
+          .insert([{
+            id: data.user.id,
+            nombre: name,
+            email: email,
+            role: role,
+            created_at: new Date().toISOString()
+          }]);
+
+        if (profileError) {
+          console.warn('Error creating profile:', profileError.message);
+          // Continuar de todos modos
+        }
+
+        // No hacer login automático, dejar que el usuario confirme email
+        return { success: true, message: 'Usuario registrado. Revisa tu email para confirmar.' };
+      }
+    } catch (err) {
+      console.error('Register error:', err);
+      return { error: 'Error interno del servidor' };
     }
 
-    const newProfile = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      email,
-      password,
-      role: 'usuario',
-      created_at: new Date().toISOString()
-    };
-
-    await insertProfile(newProfile);
-
-    const userData = {
-      id: newProfile.id,
-      name: newProfile.name,
-      email: newProfile.email,
-      role: newProfile.role
-    };
-
-    setUser(userData);
-    setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
-    return { success: true };
+    return { error: 'Error desconocido' };
   };
 
   const logout = () => {

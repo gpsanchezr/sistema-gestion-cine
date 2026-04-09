@@ -499,3 +499,28 @@
     font-size: 1.2rem;
   }
 }
+
+/* ========================================
+   BOTÓN DE SUBMIT
+   ======================================== */
+
+.submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 10px;
+}
+
+.submit-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(255, 0, 81, 0.4);
+}

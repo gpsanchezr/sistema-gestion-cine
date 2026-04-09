@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/Auth.jsx';
+import { supabase } from '../lib/supabase';
 import '../styles/AdminDashboard.css';
 
 const AdminDashboard = () => {
   const { user, logout, tickets, validateTicket, isAdmin } = useAuth();
-  const [peliculas, setPeliculas] = useState(() => {
-    const stored = localStorage.getItem('peliculas');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [peliculas, setPeliculas] = useState([]);
+
+  // Cargar películas desde Supabase
+  useEffect(() => {
+    const loadPeliculas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('peliculas')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setPeliculas(data);
+        }
+      } catch (err) {
+        console.warn('Error loading movies:', err);
+      }
+    };
+
+    loadPeliculas();
+  }, []);
   const [newPelicula, setNewPelicula] = useState({
     titulo: '',
     genero: '',
@@ -20,8 +38,51 @@ const AdminDashboard = () => {
     estrenos: false
   });
   const [editingId, setEditingId] = useState(null);
-  const [searchTicket, setSearchTicket] = useState('');
-  const [filteredTickets, setFilteredTickets] = useState(tickets);
+  const [userProfile, setUserProfile] = useState({
+    name: user?.name || '',
+    email: user?.email || ''
+  });
+
+  // Cargar perfil del usuario
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('perfiles')
+          .select('name, email')
+          .eq('id', user?.id)
+          .single();
+
+        if (!error && data) {
+          setUserProfile(data);
+        }
+      } catch (err) {
+        console.warn('Error loading user profile:', err);
+      }
+    };
+
+    if (user?.id) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const updateUserProfile = async () => {
+    try {
+      const { error } = await supabase
+        .from('perfiles')
+        .update({ name: userProfile.name })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      alert('Perfil actualizado exitosamente');
+      // Recargar la página para actualizar el estado
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Error al actualizar el perfil: ' + error.message);
+    }
+  };
 
   useEffect(() => {
     setFilteredTickets(tickets.filter(ticket =>
@@ -34,26 +95,52 @@ const AdminDashboard = () => {
     return <div>No tienes permisos para acceder a esta página.</div>;
   }
 
-  const savePelicula = () => {
-    if (editingId) {
-      setPeliculas(peliculas.map(p => p.id === editingId ? { ...newPelicula, id: editingId } : p));
-    } else {
-      const pelicula = { ...newPelicula, id: Date.now().toString() };
-      setPeliculas([...peliculas, pelicula]);
+  const savePelicula = async () => {
+    try {
+      const peliculaData = {
+        ...newPelicula,
+        created_at: new Date().toISOString()
+      };
+
+      if (editingId) {
+        // Actualizar película existente
+        const { error } = await supabase
+          .from('peliculas')
+          .update(peliculaData)
+          .eq('id', editingId);
+
+        if (error) throw error;
+
+        setPeliculas(peliculas.map(p => p.id === editingId ? { ...peliculaData, id: editingId } : p));
+      } else {
+        // Crear nueva película
+        const { data, error } = await supabase
+          .from('peliculas')
+          .insert([peliculaData])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setPeliculas([data, ...peliculas]);
+      }
+
+      setNewPelicula({
+        titulo: '',
+        genero: '',
+        descripcion: '',
+        formato: '2D',
+        fecha: '',
+        poster: '',
+        funciones: [],
+        preventa: false,
+        estrenos: false
+      });
+      setEditingId(null);
+    } catch (error) {
+      console.error('Error saving movie:', error);
+      alert('Error al guardar la película: ' + error.message);
     }
-    setNewPelicula({
-      titulo: '',
-      genero: '',
-      descripcion: '',
-      formato: '2D',
-      fecha: '',
-      poster: '',
-      funciones: [],
-      preventa: false,
-      estrenos: false
-    });
-    setEditingId(null);
-    localStorage.setItem('peliculas', JSON.stringify(peliculas));
   };
 
   const editPelicula = (pelicula) => {
@@ -61,9 +148,20 @@ const AdminDashboard = () => {
     setEditingId(pelicula.id);
   };
 
-  const deletePelicula = (id) => {
-    setPeliculas(peliculas.filter(p => p.id !== id));
-    localStorage.setItem('peliculas', JSON.stringify(peliculas.filter(p => p.id !== id)));
+  const deletePelicula = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('peliculas')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setPeliculas(peliculas.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Error deleting movie:', error);
+      alert('Error al eliminar la película: ' + error.message);
+    }
   };
 
   const addFuncion = () => {
@@ -98,6 +196,32 @@ const AdminDashboard = () => {
       </header>
 
       <div className="admin-content">
+        <section className="profile-section">
+          <h2>Mi Perfil</h2>
+          <div className="profile-form">
+            <div className="form-group">
+              <label>Nombre:</label>
+              <input
+                type="text"
+                value={userProfile.name}
+                onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+                placeholder="Tu nombre completo"
+              />
+            </div>
+            <div className="form-group">
+              <label>Email:</label>
+              <input
+                type="email"
+                value={userProfile.email}
+                disabled
+              />
+            </div>
+            <button onClick={updateUserProfile} className="update-profile-btn">
+              Actualizar Perfil
+            </button>
+          </div>
+        </section>
+
         <section className="peliculas-section">
           <h2>Gestión de Películas</h2>
           <div className="form-card">

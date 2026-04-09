@@ -1,14 +1,36 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/Auth.jsx';
 import CineBot from '../components/CineBot';
 import PurchaseModal from '../components/PurchaseModal';
 import { sendTicketEmail } from '../lib/emailService';
+import { supabase } from '../lib/supabase';
 import '../styles/Home.css';
 
+const isFunctionToday = (funcion) => {
+  if (!funcion) return false;
+  const fecha = new Date(`${funcion.año}-${String(funcion.mes).padStart(2, '0')}-${String(funcion.dia).padStart(2, '0')}T${funcion.hora || '00:00'}`);
+  const hoy = new Date();
+  return fecha.toDateString() === hoy.toDateString();
+};
+
+const countTodayFunctions = (pelicula) => {
+  return pelicula?.funciones?.filter(isFunctionToday).length || 0;
+};
+
+const formatFunctionDate = (funcion) => {
+  if (!funcion) return '';
+  const fecha = new Date(`${funcion.año}-${String(funcion.mes).padStart(2, '0')}-${String(funcion.dia).padStart(2, '0')}T${funcion.hora || '00:00'}`);
+  return fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'long' });
+};
+
 const Home = () => {
-  const { user, ciudad, logout, isAdmin, createTicket, setCiudadGlobal } = useAuth();
+  const navigate = useNavigate();
+  const { user, ciudad, logout, isAdmin, createTicket, setCiudadGlobal, isAuthenticated } = useAuth();
   const [filtros, setFiltros] = useState({
-    genero: ''
+    genero: '',
+    mes: '',
+    ciudad: ''
   });
   const [showFilters, setShowFilters] = useState(true);
   const [peliculaActiva, setPeliculaActiva] = useState(null);
@@ -22,15 +44,53 @@ const Home = () => {
     return stored ? JSON.parse(stored) : [];
   });
 
+  // Cargar películas desde Supabase al montar el componente
+  useEffect(() => {
+    const loadPeliculas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('peliculas')
+          .select(`
+            *,
+            funciones (*)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          // Procesar URLs de imágenes para Supabase Storage
+          const processedData = data.map(pelicula => ({
+            ...pelicula,
+            poster_url: pelicula.poster_url 
+              ? (pelicula.poster_url.startsWith('http') 
+                  ? pelicula.poster_url 
+                  : supabase.storage.from('images').getPublicUrl(pelicula.poster_url).data.publicUrl)
+              : null
+          }));
+          
+          setPeliculas(processedData);
+          localStorage.setItem('peliculas', JSON.stringify(processedData));
+        }
+      } catch (err) {
+        console.warn('Error loading movies from Supabase:', err);
+      }
+    };
+
+    loadPeliculas();
+  }, []);
+
   const peliculasOrganizadas = useMemo(() => ({
-    disponibles: peliculas.filter(p => !p.preventa && !p.estrenos),
-    preventa: peliculas.filter(p => p.preventa && !p.estrenos),
-    estrenos: peliculas.filter(p => p.estrenos)
+    disponibles: peliculas.filter(p => !p.preventa && p.estado !== 'proximamente'),
+    preventa: peliculas.filter(p => p.preventa && p.estado !== 'proximamente'),
+    estrenos: peliculas.filter(p => p.estado === 'proximamente')
   }), [peliculas]);
 
   const peliculasFiltradas = useMemo(() => {
     const aplicarFiltros = lista => lista.filter(p => {
-      if (filtros.genero && p.genero !== filtros.genero) return false;
+      if (filtros.genero && !p.genero?.toLowerCase().includes(filtros.genero.toLowerCase())) return false;
+      if (filtros.mes) {
+        const mesPelicula = new Date(p.fecha_estreno || p.created_at).getMonth() + 1;
+        if (mesPelicula !== parseInt(filtros.mes)) return false;
+      }
       return true;
     });
 
@@ -41,11 +101,8 @@ const Home = () => {
     };
   }, [peliculasOrganizadas, filtros]);
 
-  const generos = useMemo(() => {
-    const todosGeneros = new Set();
-    peliculas.forEach(p => p.genero && todosGeneros.add(p.genero));
-    return Array.from(todosGeneros);
-  }, [peliculas]);
+  const generos = ['Acción', 'Aventura', 'Animación', 'Ciencia Ficción', 'Comedia', 'Drama', 'Fantasía', 'Infantil', 'Música', 'Concierto'];
+  const meses = Array.from({length: 12}, (_, i) => i + 1);
 
   const handleFiltroChange = e => {
     const { name, value } = e.target;
@@ -53,12 +110,11 @@ const Home = () => {
   };
 
   const clearFilters = () => {
-    setFiltros({ genero: '' });
+    setFiltros({ genero: '', mes: '', ciudad: '' });
   };
 
   const handleComprar = pelicula => {
-    setPeliculaActiva(pelicula);
-    setModalAbierto(true);
+    navigate(`/movie/${pelicula.id}`);
   };
 
   const handleCerrarModal = () => {
@@ -79,19 +135,28 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      <CineBot />
+      <CineBot peliculas={peliculas} user={user} isAuthenticated={isAuthenticated} />
 
       <header className="home-header">
-        <div className="header-top">
-          <h1>🎬 Cartelera</h1>
-          <div className="header-info">
-            <span className="ciudad-info">📍 {ciudad}</span>
-            <span className="user-info">👤 {user?.email}</span>
-            {isAdmin && (
-              <a href="/admin" className="admin-link">⚙️ Admin</a>
-            )}
-            <button className="logout-btn" onClick={logout}>Cerrar Sesión</button>
-          </div>
+        <div className="header-left">
+          <div className="brand-logo">🎞️</div>
+        </div>
+        <div className="header-center">
+          <h1>CinemaHub</h1>
+        </div>
+        <div className="header-right">
+          {ciudad && <span className="ciudad-info">📍 {ciudad}</span>}
+          {isAuthenticated ? (
+            <>
+              <span className="user-info">👤 {user?.name || user?.email}</span>
+              {isAdmin && (
+                <a href="/admin" className="admin-link">⚙️ Admin</a>
+              )}
+              <button className="logout-btn" onClick={logout}>Cerrar Sesión</button>
+            </>
+          ) : (
+            <button className="login-btn" onClick={() => navigate('/login')}>Iniciar Sesión</button>
+          )}
         </div>
       </header>
 
@@ -115,9 +180,45 @@ const Home = () => {
                 className="filtro-select"
               >
                 <option value="">Todos los géneros</option>
-                {generos.map(genero => (
+                {generos.filter(genero => genero !== 'Todos los géneros').map(genero => (
                   <option key={genero} value={genero}>
                     {genero}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filtro-group">
+              <label htmlFor="mes">Mes</label>
+              <select
+                id="mes"
+                name="mes"
+                value={filtros.mes}
+                onChange={handleFiltroChange}
+                className="filtro-select"
+              >
+                <option value="">Todos los meses</option>
+                {meses.filter(m => m !== 'Todos los meses').map(m => (
+                  <option key={m} value={m}>
+                    {new Date(2000, m - 1, 1).toLocaleDateString('es-ES', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filtro-group">
+              <label htmlFor="ciudad">Ciudad</label>
+              <select
+                id="ciudad"
+                name="ciudad"
+                value={filtros.ciudad}
+                onChange={handleFiltroChange}
+                className="filtro-select"
+              >
+                <option value="">Todas las ciudades</option>
+                {ciudades.filter(c => c !== 'Todas las ciudades').map(c => (
+                  <option key={c} value={c}>
+                    {c}
                   </option>
                 ))}
               </select>
@@ -225,30 +326,44 @@ const SeccionPeliculas = ({ titulo, badge = 'disponible', peliculas, onComprar, 
 
 const PeliculaCard = ({ pelicula, onComprar, disabled }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const todayCount = countTodayFunctions(pelicula);
 
   return (
     <div className={`pelicula-card ${disabled ? 'disabled' : ''}`}>
       <div className="card-poster">
-        {pelicula.poster ? (
-          <img src={pelicula.poster} alt={pelicula.titulo} />
+        {pelicula.poster_url ? (
+          <Link to={`/movie/${pelicula.id}`}>
+            <img src={pelicula.poster_url} alt={pelicula.titulo} />
+          </Link>
         ) : (
           <div className="poster-placeholder">📽️</div>
         )}
       </div>
 
       <div className="card-body">
-        <h3>{pelicula.titulo}</h3>
-        <p className="genero">{pelicula.genero}</p>
+        <h3 className="card-title">{pelicula.titulo}</h3>
+        
+        <div className="card-details">
+          <p className="detalles-tecnicos">
+            {pelicula.genero || 'Género no especificado'} • {pelicula.duracion_min ? `${pelicula.duracion_min} min` : 'Duración no especificada'} • {pelicula.clasificacion || 'Clasificación no especificada'}
+          </p>
+        </div>
+        
         <p className="descripcion">{pelicula.descripcion}</p>
 
         <div className="card-meta">
-          <span>{pelicula.formato || '2D'}</span>
-          <span>{pelicula.fecha || 'Fecha por definir'}</span>
+          <span className="formato">{pelicula.formato || '2D'}</span>
+          <span className="fecha-estreno">
+            Estreno: {pelicula.fecha_estreno ? new Date(pelicula.fecha_estreno).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'Fecha por definir'}
+          </span>
         </div>
+
 
         {pelicula.funciones && pelicula.funciones.length > 0 && (
           <div className="funciones-preview">
-            <p className="funciones-count">🕐 {pelicula.funciones.length} funciones</p>
+            <p className="funciones-count">
+              🕐 {todayCount > 0 ? `${todayCount} funciones hoy` : `${pelicula.funciones.length} funciones`}
+            </p>
           </div>
         )}
 
@@ -277,7 +392,7 @@ const PeliculaCard = ({ pelicula, onComprar, disabled }) => {
               <ul>
                 {pelicula.funciones.map(func => (
                   <li key={func.id}>
-                    Sala {func.sala} · {func.dia}/{func.mes}/{func.año} · {func.hora}
+                    Sala {func.sala} · {formatFunctionDate(func)} · {func.hora}
                   </li>
                 ))}
               </ul>

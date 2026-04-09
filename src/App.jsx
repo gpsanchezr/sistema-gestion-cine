@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/Auth.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import MovieDetails from './pages/MovieDetails';
 import AdminDashboard from './pages/AdminDashboard';
 import Checkout from './pages/Checkout';
 import './styles/App.css';
@@ -56,6 +57,12 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
+          {/* Ruta Principal - Pública */}
+          <Route path="/home" element={<Home />} />
+
+          {/* Detalles de Película */}
+          <Route path="/movie/:id" element={<MovieDetails />} />
+
           {/* Rutas Públicas */}
           <Route
             path="/login"
@@ -68,15 +75,6 @@ function App() {
 
           {/* Rutas Protegidas */}
           <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/checkout"
             element={
               <ProtectedRoute>
@@ -86,8 +84,8 @@ function App() {
           />
 
           {/* Rutas por Defecto */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </AuthProvider>
     </Router>

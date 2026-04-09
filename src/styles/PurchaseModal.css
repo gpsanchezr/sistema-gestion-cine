@@ -223,11 +223,16 @@
 
 .seats-grid {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(15, 1fr);
   gap: 8px;
-  max-width: 400px;
+  max-width: 600px;
   margin: 0 auto;
   justify-items: center;
+}
+
+.seat-row {
+  display: flex;
+  gap: 8px;
 }
 
 .seat {
@@ -415,6 +420,12 @@
   border: 1px solid var(--neon-cyan);
   border-radius: 12px;
   margin-bottom: 15px;
+}
+
+.ticket-line {
+  color: var(--text-secondary);
+  margin: 10px 0 0;
+  font-weight: 600;
 }
 
 .qr-code {

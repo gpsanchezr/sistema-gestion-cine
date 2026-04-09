@@ -1,141 +1,310 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase'; 
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '../context/Auth.jsx';
+import CineBot from '../components/CineBot';
+import PurchaseModal from '../components/PurchaseModal';
+import { sendTicketEmail } from '../lib/emailService';
+import '../styles/Home.css';
 
-// Si el archivo Home.css no existe, deja esta línea comentada
-// import './Home.css'; 
+const Home = () => {
+  const { user, ciudad, logout, isAdmin, createTicket, setCiudadGlobal } = useAuth();
+  const [filtros, setFiltros] = useState({
+    genero: ''
+  });
+  const [showFilters, setShowFilters] = useState(true);
+  const [peliculaActiva, setPeliculaActiva] = useState(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(!ciudad);
 
-export default function Home() {
-  const [peliculas, setPeliculas] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const ciudades = ['Barranquilla', 'Bogotá', 'Medellín', 'Cali', 'Cartagena'];
 
-  useEffect(() => {
-    loadPeliculas();
-  }, []);
+  const [peliculas, setPeliculas] = useState(() => {
+    const stored = localStorage.getItem('peliculas');
+    return stored ? JSON.parse(stored) : [];
+  });
 
-  const loadPeliculas = async () => {
-    try {
-      setLoading(true);
-      // Traemos las películas de la tabla 'peliculas' en Supabase
-      const { data, error } = await supabase
-        .from('peliculas')
-        .select('*')
-        .order('id', { ascending: false });
+  const peliculasOrganizadas = useMemo(() => ({
+    disponibles: peliculas.filter(p => !p.preventa && !p.estrenos),
+    preventa: peliculas.filter(p => p.preventa && !p.estrenos),
+    estrenos: peliculas.filter(p => p.estrenos)
+  }), [peliculas]);
 
-      if (error) throw error;
+  const peliculasFiltradas = useMemo(() => {
+    const aplicarFiltros = lista => lista.filter(p => {
+      if (filtros.genero && p.genero !== filtros.genero) return false;
+      return true;
+    });
 
-      console.log("Datos recibidos de Supabase:", data); 
-      setPeliculas(data || []);
-    } catch (error) {
-      console.error('Error cargando películas:', error.message);
-    } finally {
-      setLoading(false);
-    }
+    return {
+      disponibles: aplicarFiltros(peliculasOrganizadas.disponibles),
+      preventa: aplicarFiltros(peliculasOrganizadas.preventa),
+      estrenos: aplicarFiltros(peliculasOrganizadas.estrenos)
+    };
+  }, [peliculasOrganizadas, filtros]);
+
+  const generos = useMemo(() => {
+    const todosGeneros = new Set();
+    peliculas.forEach(p => p.genero && todosGeneros.add(p.genero));
+    return Array.from(todosGeneros);
+  }, [peliculas]);
+
+  const handleFiltroChange = e => {
+    const { name, value } = e.target;
+    setFiltros(prev => ({ ...prev, [name]: value }));
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#000', color: '#fff' }}>
-        <div style={{ textAlign: 'center' }}>
-            <div className="spinner"></div> {/* Puedes agregar un spinner CSS aquí */}
-            <p>Cargando cartelera...</p>
-        </div>
-      </div>
-    );
-  }
+  const clearFilters = () => {
+    setFiltros({ genero: '' });
+  };
+
+  const handleComprar = pelicula => {
+    setPeliculaActiva(pelicula);
+    setModalAbierto(true);
+  };
+
+  const handleCerrarModal = () => {
+    setModalAbierto(false);
+    setPeliculaActiva(null);
+  };
+
+  const handlePagoExitoso = async (ticketData) => {
+    if (!user || !ticketData) return;
+
+    const newTicket = await createTicket(ticketData);
+
+    await sendTicketEmail(newTicket);
+
+    alert(`Compra exitosa. Tu código de ticket es ${newTicket.id}`);
+    handleCerrarModal();
+  };
 
   return (
-    <div style={{ background: 'var(--dark-bg)', minHeight: '100vh', color: '#fff', fontFamily: 'Poppins, sans-serif' }}>
-      <div style={{ padding: '60px 20px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.1), rgba(26, 26, 26, 0.8))', backdropFilter: 'blur(10px)' }}>
-        <h1 style={{ color: 'var(--netflix-red)', fontSize: '3.5rem', fontWeight: 'bold', margin: '0', textShadow: '0 0 30px rgba(229, 9, 20, 0.5)' }}>🎬 Cartelera de Cine</h1>
-        <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1.2rem', margin: '10px 0 0 0' }}>Descubre las mejores películas del momento</p>
-      </div>
+    <div className="home-container">
+      <CineBot />
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {peliculas.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '80px 20px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            backdropFilter: 'blur(15px)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            margin: '40px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🎭</div>
-            <h3 style={{ color: 'white', margin: '0 0 20px 0' }}>No hay películas disponibles</h3>
-            <button 
-              onClick={loadPeliculas} 
-              style={{ 
-                padding: '12px 24px', 
-                background: 'linear-gradient(135deg, #e50914, #b20710)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-              onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
-            >
-              🔄 Reintentar
+      <header className="home-header">
+        <div className="header-top">
+          <h1>🎬 Cartelera</h1>
+          <div className="header-info">
+            <span className="ciudad-info">📍 {ciudad}</span>
+            <span className="user-info">👤 {user?.email}</span>
+            {isAdmin && (
+              <a href="/admin" className="admin-link">⚙️ Admin</a>
+            )}
+            <button className="logout-btn" onClick={logout}>Cerrar Sesión</button>
+          </div>
+        </div>
+      </header>
+
+      <div className="home-content">
+        <aside className={`filtros-panel ${showFilters ? 'active' : ''}`}>
+          <div className="filtros-header">
+            <h3>🔍 Filtros</h3>
+            <button className="toggle-filters" onClick={() => setShowFilters(!showFilters)}>
+              {showFilters ? '←' : '→'}
             </button>
           </div>
-        ) : (
-          <div className="grid-movies">
-            {peliculas.map((pelicula) => (
-              <Link
-                key={pelicula.id}
-                to={`/pelicula/${pelicula.id}`}
-                className="movie-card"
+
+          <div className="filtros-content">
+            <div className="filtro-group">
+              <label htmlFor="genero">Género</label>
+              <select
+                id="genero"
+                name="genero"
+                value={filtros.genero}
+                onChange={handleFiltroChange}
+                className="filtro-select"
               >
-                <div className="poster-container">
-                  {pelicula.imagen_url ? (
-                    <img 
-                      src={pelicula.imagen_url} 
-                      alt={pelicula.titulo} 
-                    />
-                  ) : (
-                    <div style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      background: 'linear-gradient(135deg, #333, #555)', 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      alignItems: 'center',
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      fontSize: '1.5rem'
-                    }}>
-                      🎬
-                    </div>
-                  )}
-                  {pelicula.clasificacion && (
-                    <div className="rating-badge">
-                      {pelicula.clasificacion}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="content">
-                  <h3>{pelicula.titulo}</h3>
-                  <div className="meta">
-                    <span className="genre">{pelicula.genero}</span>
-                    <span className="duration">{pelicula.duracion} min</span>
-                  </div>
-                  {pelicula.descripcion && (
-                    <p className="description">{pelicula.descripcion}</p>
-                  )}
-                  <button className="action-btn">
-                    🎫 Ver Asientos
-                  </button>
-                </div>
-              </Link>
-            ))}
+                <option value="">Todos los géneros</option>
+                {generos.map(genero => (
+                  <option key={genero} value={genero}>
+                    {genero}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button className="clear-filters-btn" onClick={clearFilters}>
+              🔄 Limpiar Filtros
+            </button>
+
+            <div className="filtros-stats">
+              <div className="stat-item">
+                <span className="stat-label">Disponibles</span>
+                <span className="stat-count">{peliculasFiltradas.disponibles.length}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Preventa</span>
+                <span className="stat-count">{peliculasFiltradas.preventa.length}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Estrenos</span>
+                <span className="stat-count">{peliculasFiltradas.estrenos.length}</span>
+              </div>
+            </div>
           </div>
-        )}
+        </aside>
+
+        <main className="cartelera-main">
+          <SeccionPeliculas
+            titulo="DISPONIBLES"
+            peliculas={peliculasFiltradas.disponibles}
+            onComprar={handleComprar}
+          />
+          <SeccionPeliculas
+            titulo="PREVENTA"
+            badge="preventa"
+            peliculas={peliculasFiltradas.preventa}
+            onComprar={handleComprar}
+          />
+          <SeccionPeliculas
+            titulo="ESTRENOS PRÓXIMAMENTE"
+            badge="estrenos"
+            peliculas={peliculasFiltradas.estrenos}
+            onComprar={handleComprar}
+            disabled
+          />
+
+          {peliculas.length === 0 && (
+            <div className="empty-cartelera">
+              <h3>No hay películas disponibles</h3>
+              <p>Vuelve pronto para ver nuestras próximas películas</p>
+            </div>
+          )}
+
+          {peliculas.length > 0 &&
+            peliculasFiltradas.disponibles.length === 0 &&
+            peliculasFiltradas.preventa.length === 0 &&
+            peliculasFiltradas.estrenos.length === 0 && (
+              <div className="empty-cartelera">
+                <h3>No hay películas con esos filtros</h3>
+                <p>Intenta cambiar los filtros</p>
+              </div>
+            )}
+        </main>
       </div>
+
+      {modalAbierto && peliculaActiva && (
+        <PurchaseModal
+          pelicula={peliculaActiva}
+          onClose={handleCerrarModal}
+          onPagoExitoso={handlePagoExitoso}
+        />
+      )}
+
+      {showCityModal && (
+        <CityModal onSelect={(city) => {
+          setCiudadGlobal(city);
+          setShowCityModal(false);
+        }} />
+      )}
     </div>
   );
-}
+};
+
+const SeccionPeliculas = ({ titulo, badge = 'disponible', peliculas, onComprar, disabled }) => {
+  if (!peliculas || peliculas.length === 0) return null;
+  return (
+    <section className="cartelera-section">
+      <h2 className="section-title">
+        <span className={`badge ${badge}`}>●</span>
+        {titulo}
+      </h2>
+      <div className="peliculas-grid">
+        {peliculas.map(pelicula => (
+          <PeliculaCard
+            key={pelicula.id}
+            pelicula={pelicula}
+            onComprar={onComprar}
+            disabled={disabled}
+          />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const PeliculaCard = ({ pelicula, onComprar, disabled }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <div className={`pelicula-card ${disabled ? 'disabled' : ''}`}>
+      <div className="card-poster">
+        {pelicula.poster ? (
+          <img src={pelicula.poster} alt={pelicula.titulo} />
+        ) : (
+          <div className="poster-placeholder">📽️</div>
+        )}
+      </div>
+
+      <div className="card-body">
+        <h3>{pelicula.titulo}</h3>
+        <p className="genero">{pelicula.genero}</p>
+        <p className="descripcion">{pelicula.descripcion}</p>
+
+        <div className="card-meta">
+          <span>{pelicula.formato || '2D'}</span>
+          <span>{pelicula.fecha || 'Fecha por definir'}</span>
+        </div>
+
+        {pelicula.funciones && pelicula.funciones.length > 0 && (
+          <div className="funciones-preview">
+            <p className="funciones-count">🕐 {pelicula.funciones.length} funciones</p>
+          </div>
+        )}
+
+        <div className="card-actions">
+          <button className="details-btn" onClick={() => setShowDetails(!showDetails)}>
+            {showDetails ? '△ Ocultar' : '▽ Detalles'}
+          </button>
+
+          {!disabled ? (
+            <button className="comprar-btn" onClick={() => onComprar(pelicula)}>
+              🎟️ Comprar
+            </button>
+          ) : (
+            <button className="comprar-btn disabled" disabled>
+              🔒 Próximamente
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showDetails && (
+        <div className="card-details">
+          <div className="details-content">
+            <h4>Funciones disponibles:</h4>
+            {pelicula.funciones && pelicula.funciones.length > 0 ? (
+              <ul>
+                {pelicula.funciones.map(func => (
+                  <li key={func.id}>
+                    Sala {func.sala} · {func.dia}/{func.mes}/{func.año} · {func.hora}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Sin funciones programadas</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CityModal = ({ onSelect }) => (
+  <div className="city-modal-overlay">
+    <div className="city-modal glass">
+      <h2>Selecciona tu Ciudad</h2>
+      <p>Elige la ciudad donde deseas ver películas</p>
+      <div className="city-options">
+        {['Barranquilla', 'Bogotá', 'Medellín', 'Cali', 'Cartagena'].map(city => (
+          <button key={city} onClick={() => onSelect(city)} className="city-btn">
+            {city}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+export default Home;

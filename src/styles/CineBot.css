@@ -1,0 +1,630 @@
+/* ========================================
+   CINEBOT - ASISTENTE HOLOGRÁFICO
+   ======================================== */
+
+.cinebot-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* ========================================
+   BOTÓN PRINCIPAL DEL CINEBOT
+   ======================================== */
+
+.cinebot-toggle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  border: 2px solid var(--neon-red);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(255, 0, 81, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.cinebot-toggle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 0, 81, 0.3), rgba(255, 0, 81, 0.1));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.cinebot-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(255, 0, 81, 0.6);
+}
+
+.cinebot-toggle.active {
+  background: linear-gradient(135deg, var(--neon-cyan), rgba(0, 245, 255, 0.8));
+  border-color: var(--neon-cyan);
+  box-shadow: 0 4px 20px rgba(0, 245, 255, 0.4);
+}
+
+.cinebot-toggle.active::before {
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(0, 245, 255, 0.1));
+  animation: pulse-cyan 2s ease-in-out infinite;
+}
+
+@keyframes pulse-cyan {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+.bot-icon {
+  font-size: 1.5rem;
+  color: white;
+  z-index: 1;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.cinebot-toggle:hover .bot-icon {
+  transform: rotate(15deg);
+}
+
+/* ========================================
+   CUERPO DEL CINEBOT
+   ======================================== */
+
+.cinebot-body {
+  width: 300px;
+  height: 400px;
+  background: var(--glass);
+  border: 2px solid var(--neon-red);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(255, 0, 81, 0.3);
+  animation: slideInBot 0.4s ease;
+  position: relative;
+}
+
+@keyframes slideInBot {
+  from {
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.cinebot-body.active {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 10px 40px rgba(0, 245, 255, 0.3);
+}
+
+/* Efecto holográfico */
+.cinebot-body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    rgba(255, 0, 81, 0.1) 0%,
+    rgba(131, 56, 236, 0.1) 50%,
+    rgba(0, 245, 255, 0.1) 100%);
+  border-radius: 20px;
+  animation: hologram 3s ease-in-out infinite;
+}
+
+@keyframes hologram {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* ========================================
+   CABEZA DEL CINEBOT
+   ======================================== */
+
+.bot-head {
+  height: 120px;
+  background: linear-gradient(135deg, rgba(255, 0, 81, 0.2), rgba(255, 0, 81, 0.1));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bot-face {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(255, 0, 81, 0.3);
+}
+
+.bot-eyes {
+  display: flex;
+  gap: 15px;
+}
+
+.bot-eye {
+  width: 12px;
+  height: 12px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  animation: blink 3s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 90%, 100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  95% {
+    opacity: 0.3;
+    transform: scaleY(0.1);
+  }
+}
+
+/* Brazos animados */
+.bot-arms {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 60px;
+}
+
+.bot-arm {
+  width: 20px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  border-radius: 10px;
+  position: relative;
+  animation: wave 2s ease-in-out infinite;
+}
+
+.bot-arm.left {
+  animation-delay: 0s;
+}
+
+.bot-arm.right {
+  animation-delay: 1s;
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  75% {
+    transform: rotate(-15deg);
+  }
+}
+
+/* ========================================
+   CUERPO DEL BOT
+   ======================================== */
+
+.bot-torso {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: relative;
+}
+
+.bot-name {
+  text-align: center;
+  color: var(--neon-red);
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(255, 0, 81, 0.3);
+  margin-bottom: 10px;
+}
+
+.bot-status {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+/* ========================================
+   MENSAJES DEL BOT
+   ======================================== */
+
+.bot-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.bot-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bot-messages::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.bot-messages::-webkit-scrollbar-thumb {
+  background: var(--neon-red);
+  border-radius: 2px;
+}
+
+.bot-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-pink);
+}
+
+.message {
+  padding: 12px 15px;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  position: relative;
+  animation: messageIn 0.3s ease;
+}
+
+@keyframes messageIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.message.bot {
+  background: linear-gradient(135deg, rgba(255, 0, 81, 0.2), rgba(255, 0, 81, 0.1));
+  color: var(--text-primary);
+  align-self: flex-start;
+  border: 1px solid rgba(255, 0, 81, 0.3);
+  max-width: 80%;
+}
+
+.message.bot::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(255, 0, 81, 0.3);
+}
+
+.message.user {
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(0, 245, 255, 0.1));
+  color: var(--text-primary);
+  align-self: flex-end;
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  max-width: 80%;
+}
+
+.message.user::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(0, 245, 255, 0.3);
+}
+
+/* ========================================
+   INPUT DE MENSAJES
+   ======================================== */
+
+.bot-input-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.bot-input {
+  flex: 1;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.bot-input:focus {
+  border-color: var(--neon-red);
+  box-shadow: inset 0 0 10px rgba(255, 0, 81, 0.1);
+}
+
+.bot-input::placeholder {
+  color: var(--text-muted);
+}
+
+.send-btn {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.send-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(255, 0, 81, 0.4);
+}
+
+.send-btn:disabled {
+  background: rgba(100, 100, 100, 0.3);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================
+   BUBBLE DE SALUDO INDEPENDIENTE
+   ======================================== */
+
+.greeting-bubble {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass);
+  border: 2px solid var(--neon-cyan);
+  border-radius: 15px;
+  padding: 15px 20px;
+  box-shadow: 0 8px 25px rgba(0, 245, 255, 0.3);
+  animation: bubbleFloat 3s ease-in-out infinite;
+  z-index: 1001;
+  max-width: 250px;
+  text-align: center;
+}
+
+@keyframes bubbleFloat {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0px);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+.greeting-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid var(--neon-cyan);
+}
+
+.greeting-text {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.greeting-highlight {
+  color: var(--neon-cyan);
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
+}
+
+/* ========================================
+   ACCIONES RÁPIDAS
+   ======================================== */
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.quick-btn {
+  padding: 6px 12px;
+  background: rgba(255, 0, 81, 0.1);
+  border: 1px solid var(--neon-red);
+  border-radius: 15px;
+  color: var(--neon-red);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quick-btn:hover {
+  background: rgba(255, 0, 81, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(255, 0, 81, 0.2);
+}
+
+/* ========================================
+   ESTADOS ESPECIALES
+   ======================================== */
+
+.cinebot-body.typing .bot-face::after {
+  content: '...';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--neon-cyan);
+  font-size: 1.2rem;
+  font-weight: 700;
+  animation: typing 1.5s ease-in-out infinite;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0;
+  }
+}
+
+.cinebot-body.sleeping {
+  opacity: 0.7;
+}
+
+.cinebot-body.sleeping .bot-eye {
+  animation: none;
+  opacity: 0.3;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .cinebot-container {
+    bottom: 15px;
+    right: 15px;
+  }
+
+  .cinebot-toggle {
+    width: 50px;
+    height: 50px;
+  }
+
+  .bot-icon {
+    font-size: 1.2rem;
+  }
+
+  .cinebot-body {
+    width: 280px;
+    height: 350px;
+  }
+
+  .bot-head {
+    height: 100px;
+  }
+
+  .bot-face {
+    width: 70px;
+    height: 70px;
+  }
+
+  .bot-arms {
+    gap: 50px;
+  }
+
+  .bot-arm {
+    width: 18px;
+    height: 35px;
+  }
+
+  .greeting-bubble {
+    max-width: 220px;
+    padding: 12px 16px;
+    top: -70px;
+  }
+
+  .greeting-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cinebot-container {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .cinebot-toggle {
+    width: 45px;
+    height: 45px;
+  }
+
+  .bot-icon {
+    font-size: 1rem;
+  }
+
+  .cinebot-body {
+    width: 260px;
+    height: 320px;
+  }
+
+  .bot-head {
+    height: 90px;
+  }
+
+  .bot-face {
+    width: 60px;
+    height: 60px;
+  }
+
+  .bot-eye {
+    width: 10px;
+    height: 10px;
+  }
+
+  .bot-arms {
+    gap: 40px;
+  }
+
+  .bot-arm {
+    width: 15px;
+    height: 30px;
+  }
+
+  .greeting-bubble {
+    max-width: 200px;
+    padding: 10px 14px;
+    top: -60px;
+  }
+
+  .greeting-text {
+    font-size: 0.8rem;
+  }
+}

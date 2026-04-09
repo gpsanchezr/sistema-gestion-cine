@@ -1,30 +1,96 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/Auth.jsx';
+import Login from './pages/Login';
 import Home from './pages/Home';
-import DetallePelicula from './pages/DetallePelicula';
-import Validar from './pages/Validar';
-import Admin from './pages/Admin';
-import CineBot from './components/CineBot';
+import AdminDashboard from './pages/AdminDashboard';
+import Checkout from './pages/Checkout';
+import './styles/App.css';
+
+// Componente para proteger rutas
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const { isAuthenticated, isAdmin, isUsuario, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole === 'admin' && !isAdmin) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return children;
+};
+
+// Componente que verifica si ya está autenticado
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading, ciudad } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && ciudad) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Esta es la pantalla de inicio con Intensamente 2 */}
-        <Route path="/" element={<Home />} />
-        
-        {/* Esta es la pantalla donde aparecerán los 150 asientos */}
-        <Route path="/pelicula/:id" element={<DetallePelicula />} />
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* Rutas Públicas */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
 
-        {/* Página para validar tiquetes */}
-        <Route path="/validar" element={<Validar />} />
+          {/* Rutas Protegidas */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Panel administrativo */}
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* CineBot - Asistente inteligente disponible en todas las páginas */}
-      <CineBot />
-    </BrowserRouter>
+          {/* Rutas por Defecto */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
   );
 }
 

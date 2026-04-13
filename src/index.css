@@ -1,3 +1,10 @@
+/* Reseteo para control total de dimensiones */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
   --bg-dark: #020617;
   --glass: rgba(15, 23, 42, 0.7);
@@ -7,10 +14,68 @@
 }
 
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-main);
+  background-color: #020617;
+  color: #f8fafc;
+  overflow-x: hidden;
   font-family: 'Inter', sans-serif;
-  margin: 0;
+}
+
+/* Contenedor tipo 'Netflix' para las películas */
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 25px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Efecto cristal para los cuadros (Glassmorphism) */
+.card-vip {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  transition: transform 0.3s ease;
+}
+
+/* Contenedor principal para que nada se desborde */
+.main-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Las tarjetas de películas bien alineadas */
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* Estilo VIP para los cuadros */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 15px;
+}
+
+/* Tarjetas de Películas Estilo Cristal */
+.movie-card {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.movie-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 0 20px var(--neon-blue);
+  border-color: var(--neon-blue);
 }
 
 /* Tarjetas de Películas Estilo Cristal */

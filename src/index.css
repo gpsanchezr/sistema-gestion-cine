@@ -1,98 +1,29 @@
-/* CinemaHub Global Styles - Glassmorphism & Tornasol */
-
-/* CSS Vars */
 :root {
-  --glass-bg: rgba(15, 23, 42, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.15);
+  --bg-dark: #020617;
+  --glass: rgba(15, 23, 42, 0.7);
   --neon-pink: #ff0080;
-  --neon-cyan: #00f0ff;
-  --neon-blue: #0080ff;
-  --shadow-neon: 0 0 20px rgba(255, 0, 128, 0.4);
-  --shadow-glow: 0 25px 50px rgba(0, 0, 0, 0.5);
-  --blur: blur(15px);
+  --neon-blue: #00d2ff;
+  --text-main: #f8fafc;
 }
 
-/* Glassmorphism Base */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: var(--blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: var(--shadow-glow);
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
 }
 
-/* Tornasol Neon Border */
-.tornasol {
-  position: relative;
-}
-.tornasol::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  z-index: -1;
-  background: conic-gradient(from 0deg, var(--neon-pink), var(--neon-cyan), var(--neon-blue), var(--neon-pink));
-  border-radius: 28px;
-  padding: 4px;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  animation: tornasol 3s linear infinite;
-}
-
-/* Popcorn Conveyor Background */
-.popcorn-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-.popcorn-item {
-  position: absolute;
-  animation: conveyor linear infinite;
-  opacity: 0.1;
-}
-@keyframes conveyor {
-  0% { transform: translateX(100vw); }
-  100% { transform: translateX(-20vw); }
-}
-
-.tornasol {
+/* Tarjetas de Películas Estilo Cristal */
+.movie-card {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
 }
-.popcorn { font-size: 2rem; animation-delay: 0s; }
-.glasses { font-size: 1.5rem; animation-delay: 2s; }
-.soda { font-size: 1.8rem; animation-delay: 4s; }
 
-/* Skeleton Shimmer */
-.skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-.skeleton-row { height: 20px; margin: 8px 0; border-radius: 4px; }
-
-/* Animations */
-@keyframes tornasol {
-  to { background-position: 360deg 0; }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .glass { border-radius: 16px; padding: 1rem; }
-}
-
-/* Neon Text */
-.neon-text {
-  background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.movie-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 0 20px var(--neon-blue);
+  border-color: var(--neon-blue);
 }

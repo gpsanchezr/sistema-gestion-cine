@@ -197,3 +197,109 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal-content h3 {
+  color: white;
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+}
+
+.modal-content p {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* Enhanced loading state */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+}
+
+.loading p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+}
+
+/* Enhanced funcion card */
+.funcion-sala {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.login-required {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.funcion-card {
+  position: relative;
+}
+
+.funcion-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Seats section */
+.seats-section {
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced empty state */
+.empty-state {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+}
+
+.empty-state h3 {
+  color: white;
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 20px;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "cinemahub-backend",
+  "version": "1.0.0",
+  "description": "CinemaHub AI Chatbot Backend with OpenAI",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^4.104.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -59,12 +59,14 @@ Deno.serve(async (req: Request) => {
 
     const total = asientos_ids.length * precio_unitario;
 
+    const codigo = `CH-${Date.now().toString(36).toUpperCase().slice(-4)}-${Math.random().toString(36).slice(-4).toUpperCase()}`;
     const { data: tiquete, error: tiqueteError } = await supabase
       .from('tiquetes')
       .insert({
         usuario_id: user.id,
         funcion_id,
         total,
+        codigo,
         estado: 'activo'
       })
       .select()

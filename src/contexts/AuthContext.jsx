@@ -15,45 +15,82 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        setUser(session?.user ?? null);
+        if (session?.user?.id) {
+          await loadUserProfile(session.user.id);
+        } else {
+          setUserProfile(null);
+          setProfileLoaded(true);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking auth session:', error);
+        if (mounted) {
+          setUser(null);
+          setUserProfile(null);
+          setProfileLoaded(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
       setUser(session?.user ?? null);
-      if (session?.user) {
+      
+      // Fix infinite loop: only reload profile on sign in or new user
+      if (session?.user?.id && (event === 'SIGNED_IN' || session.user.id !== user?.id)) {
+        setProfileLoaded(false);
         loadUserProfile(session.user.id);
-      } else {
+      } else if (!session?.user) {
+        setUserProfile(null);
+        setProfileLoaded(true);
         setLoading(false);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      (() => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          loadUserProfile(session.user.id);
-        } else {
-          setUserProfile(null);
-          setLoading(false);
-        }
-      })();
-    });
+    initAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe?.();
+    };
   }, []);
 
   const loadUserProfile = async (userId) => {
+    if (!userId || profileLoaded) {
+      setProfileLoaded(true);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
-        .from('usuarios')
+        .from('perfiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) throw error;
-      setUserProfile(data);
+      if (error) {
+        console.error('Error en consulta perfiles:', error);
+        throw error;
+      }
+
+      setUserProfile(data || null);
     } catch (error) {
       console.error('Error loading user profile:', error);
+      setUserProfile(null);
     } finally {
+      setProfileLoaded(true);
       setLoading(false);
     }
   };
@@ -68,6 +105,16 @@ export const AuthProvider = ({ children }) => {
         }
       }
     });
+
+    if (!error && data.user?.id) {
+      await supabase.from('perfiles').upsert({
+        id: data.user.id,
+        email,
+        nombre,
+        rol: 'cliente'
+      }, { onConflict: 'id' });
+    }
+
     return { data, error };
   };
 

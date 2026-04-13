@@ -6,6 +6,7 @@ export default function Validar() {
   const [codigo, setCodigo] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
+  const [ticketInfo, setTicketInfo] = useState(null);
 
   const validarTiquete = async () => {
     if (!codigo.trim()) {
@@ -15,41 +16,67 @@ export default function Validar() {
 
     setLoading(true);
     setMensaje('');
+    setTicketInfo(null);
 
     try {
-      // Buscar el tiquete por código único
-      const { data: tiquete, error } = await supabase
-        .from('tiquetes')
-        .select('*')
-        .eq('codigo_unico', codigo.trim())
-        .single();
+      // Llamar a la Edge Function de Supabase para validar el ticket
+      const { data, error } = await supabase.functions.invoke('validate-ticket', {
+        body: {
+          ticketCode: codigo.trim(),
+          action: 'validate'
+        }
+      });
 
-      if (error || !tiquete) {
-        setMensaje('❌ Código no encontrado.');
+      if (error) {
+        console.error('Error en Edge Function:', error);
+        setMensaje('❌ Error al validar el ticket. Inténtalo de nuevo.');
         return;
       }
 
-      if (tiquete.estado === 'usado') {
-        setMensaje('❌ Este tiquete ya ha sido usado.');
-        return;
+      // Procesar la respuesta de la Edge Function
+      if (data.success) {
+        setMensaje(`✅ ${data.message}`);
+        setTicketInfo(data.ticketInfo);
+      } else {
+        setMensaje(`❌ ${data.message}`);
       }
 
-      if (tiquete.estado === 'valido') {
-        // Cambiar estado a 'usado'
-        const { error: updateError } = await supabase
-          .from('tiquetes')
-          .update({ estado: 'usado' })
-          .eq('codigo_unico', codigo.trim());
-
-        if (updateError) throw updateError;
-
-        setMensaje(`✅ Tiquete válido. ¡Bienvenido!`);
-        return;
-      }
-
-      setMensaje('❌ Estado del tiquete inválido.');
     } catch (error) {
-      setMensaje('Error al validar: ' + error.message);
+      console.error('Error al validar:', error);
+      setMensaje('❌ Error de conexión. Verifica tu conexión a internet.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const marcarComoUsado = async () => {
+    if (!codigo.trim()) return;
+
+    setLoading(true);
+    setMensaje('');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-ticket', {
+        body: {
+          ticketCode: codigo.trim(),
+          action: 'mark-used'
+        }
+      });
+
+      if (error) {
+        setMensaje('❌ Error al marcar como usado.');
+        return;
+      }
+
+      if (data.success) {
+        setMensaje(`✅ ${data.message}`);
+        setTicketInfo(prev => prev ? { ...prev, estado: 'usado' } : null);
+      } else {
+        setMensaje(`❌ ${data.message}`);
+      }
+
+    } catch (error) {
+      setMensaje('❌ Error de conexión.');
     } finally {
       setLoading(false);
     }

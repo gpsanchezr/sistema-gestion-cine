@@ -1,0 +1,31 @@
+^C
+> cinema-management-system@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 8 modules transformed.
+[31mx[39m Build failed in 137ms
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 1 error:
+C:/Users/Giseella Sanchez/Downloads/sistema-gestion-cine-main - copia (1)/sistema-gestion-cine-main - copia/src/components/CineBot.jsx:950:19: ERROR: Syntax error "p"[31m
+file: [36mC:/Users/Giseella Sanchez/Downloads/sistema-gestion-cine-main - copia (1)/sistema-gestion-cine-main - copia/src/components/CineBot.jsx:950:19[31m
+[33m
+[33mSyntax error "p"[33m
+948|    );
+949|  }
+950|            right: 20px;
+   |                     ^
+951|            width: 60px;
+952|            height: 60px;
+[31m
+    at failureErrorWithLog (c:\Users\Giseella Sanchez\Downloads\sistema-gestion-cine-main - copia (1)\sistema-gestion-cine-main - copia\node_modules\esbuild\lib\main.js:1472:15)
+    at c:\Users\Giseella Sanchez\Downloads\sistema-gestion-cine-main - copia (1)\sistema-gestion-cine-main - copia\node_modules\esbuild\lib\main.js:755:50
+    at responseCallbacks.<computed> (c:\Users\Giseella Sanchez\Downloads\sistema-gestion-cine-main - copia (1)\sistema-gestion-cine-main - copia\node_modules\esbuild\lib\main.js:622:9)
+    at handleIncomingPacket (c:\Users\Giseella Sanchez\Downloads\sistema-gestion-cine-main - copia (1)\sistema-gestion-cine-main - copia\node_modules\esbuild\lib\main.js:677:12)
+    at Socket.readFromStdout (c:\Users\Giseella Sanchez\Downloads\sistema-gestion-cine-main - copia (1)\sistema-gestion-cine-main - copia\node_modules\esbuild\lib\main.js:600:7)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m

@@ -1,31 +1,57 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import DetallePelicula from './pages/DetallePelicula';
+import { Toaster } from 'sonner';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
+import Cartelera from './pages/Cartelera';
+import MovieDetails from './pages/MovieDetails';
 import Validar from './pages/Validar';
-import Admin from './pages/Admin';
+import DashboardAdmin from './pages/DashboardAdmin';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import MisTiquetes from './pages/MisTiquetes';
+import NotFound from './pages/NotFound';
 import CineBot from './components/CineBot';
 
 function App() {
   return (
-    <BrowserRouter>
+<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Toaster
+        position="bottom-right"
+        richColors
+        theme="dark"
+        expand
+      />
+      <Navbar />
+
       <Routes>
-        {/* Esta es la pantalla de inicio con Intensamente 2 */}
-        <Route path="/" element={<Home />} />
-        
-        {/* Esta es la pantalla donde aparecerán los 150 asientos */}
-        <Route path="/pelicula/:id" element={<DetallePelicula />} />
-
-        {/* Página para validar tiquetes */}
+        <Route path="/" element={<Cartelera />} />
+        <Route path="/pelicula/:id" element={<MovieDetails />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Register />} />
+        <Route
+          path="/mis-tiquetes"
+          element={
+            <ProtectedRoute>
+              <MisTiquetes />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/validar" element={<Validar />} />
-
-        {/* Panel administrativo */}
-        <Route path="/admin" element={<Admin />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute adminOnly>
+              <DashboardAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* CineBot - Asistente inteligente disponible en todas las páginas */}
       <CineBot />
     </BrowserRouter>
   );
 }
 
 export default App;
+

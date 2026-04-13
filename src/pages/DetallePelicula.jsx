@@ -3,8 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function DetallePelicula() {
-  const { id } = useParams(); // Obtiene el ID de la película desde la URL
+  const { id } = useParams();
   const [pelicula, setPelicula] = useState(null);
+  const [funciones, setFunciones] = useState([]);
+  const [loadingFunciones, setLoadingFunciones] = useState(true);
+  const [errorFunciones, setErrorFunciones] = useState('');
   const [seleccionados, setSeleccionados] = useState([]);
   const asientos = Array.from({ length: 150 }, (_, i) => i + 1);
 
@@ -21,6 +24,32 @@ export default function DetallePelicula() {
       if (error) console.error("Error cargando película:", error.message);
     };
     cargarInfo();
+  }, [id]);
+
+  // 2. Cargar las funciones de la película
+  useEffect(() => {
+    const cargarFunciones = async () => {
+      try {
+        setLoadingFunciones(true);
+        setErrorFunciones('');
+
+        const { data: funcionesData, error: funcionesError } = await supabase
+          .from('funciones')
+          .select('*')
+          .eq('pelicula_id', id)
+          .order('hora', { ascending: true });
+
+        if (funcionesError) throw funcionesError;
+        setFunciones(funcionesData || []);
+      } catch (error) {
+        console.error('Error cargando funciones:', error.message || error);
+        setErrorFunciones('No se pudieron cargar las funciones.');
+      } finally {
+        setLoadingFunciones(false);
+      }
+    };
+
+    if (id) cargarFunciones();
   }, [id]);
 
   // 2. Función para seleccionar/deseleccionar asientos
@@ -86,6 +115,28 @@ export default function DetallePelicula() {
       <div style={{ padding: '20px', maxWidth: '800px', margin: '20px auto', textAlign: 'left', background: 'var(--glass)', borderRadius: '15px', backdropFilter: 'blur(10px)' }}>
         <p style={{ color: 'var(--netflix-red)', fontWeight: 'bold' }}>{pelicula.genero} | {pelicula.duracion} min</p>
         <p style={{ marginTop: '10px', lineHeight: '1.6', fontSize: '1.1rem' }}>{pelicula.descripcion}</p>
+      </div>
+
+      {/* Funciones disponibles */}
+      <div style={{ padding: '20px', maxWidth: '800px', margin: '20px auto', textAlign: 'left', background: 'rgba(255,255,255,0.1)', borderRadius: '15px' }}>
+        <h3 style={{ color: '#e50914', marginBottom: '15px' }}>Funciones disponibles</h3>
+        {loadingFunciones ? (
+          <p>Cargando funciones...</p>
+        ) : errorFunciones ? (
+          <p style={{ color: '#ff6b6b' }}>{errorFunciones}</p>
+        ) : funciones.length === 0 ? (
+          <p style={{ color: '#888' }}>No hay funciones programadas para esta película aún.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {funciones.map((funcion) => (
+              <div key={funcion.id} style={{ padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+                <p><strong>Hora:</strong> {funcion.hora || funcion.fecha_hora}</p>
+                <p><strong>Precio:</strong> ${Number(funcion.precio || 0).toLocaleString()}</p>
+                <p><strong>Estado:</strong> {funcion.estado || 'disponible'}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       {/* Pantalla del cine */}

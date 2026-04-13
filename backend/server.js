@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
 const app = express();
-const port = process.env.BACKEND_PORT || 3001;
+const port = 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -21,12 +21,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// /chat endpoint - OpenAI GPT
-app.post('/chat', async (req, res) => {
+// /chat endpoint
+app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.messages?.at(-1)?.text;
+
     if (!userMessage) {
-      return res.status(400).json({ error: 'No message provided' });
+      return res.status(400).json({ error: "Mensaje vacío" });
     }
 
     const response = await openai.chat.completions.create({
@@ -38,90 +39,61 @@ app.post('/chat', async (req, res) => {
       text: response.choices[0].message.content,
     });
   } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: 'Chat service unavailable' });
+    res.status(500).json({ error: "Chat error" });
   }
 });
 
-app.get('/api/funciones', async (req, res) => {
-  const { data, error } = await supabase.from('funciones').select('*, peliculas(*)');
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
-
-// /tiquetes endpoint - Ticket purchase with anti-overbooking
-app.post('/api/tiquetes', async (req, res) => {
+// /tiquetes endpoint
+app.post("/tiquetes", async (req, res) => {
   try {
     const { funcion_id, asientos } = req.body;
-    
-    if (!funcion_id || !asientos || !Array.isArray(asientos) || asientos.length === 0) {
-      return res.status(400).json({ error: 'funcion_id and asientos array required' });
+
+    if (!funcion_id || !Array.isArray(asientos) || asientos.length === 0) {
+      return res.status(400).json({ error: "Datos inválidos" });
     }
 
-    // 1. Validate seats available
-    const { data: occupied } = await supabase
+    const { data: ocupados } = await supabase
       .from('asientos_ocupados')
       .select('asiento_id')
       .eq('funcion_id', funcion_id);
-    
-    const occupiedSeats = occupied?.map(o => o.asiento_id) || [];
-    const invalidSeats = asientos.filter(s => occupiedSeats.includes(s));
-    
-    if (invalidSeats.length > 0) {
-      return res.status(400).json({ error: "Seats already occupied", seats: invalidSeats });
+
+    const ocupadosIds = ocupados.map(a => a.asiento_id);
+    const conflicto = asientos.filter(a => ocupadosIds.includes(a));
+
+    if (conflicto.length > 0) {
+      return res.status(400).json({ error: "Asientos ocupados", conflicto });
     }
 
-    // 2. Create ticket
-    const { data: ticket, error: ticketError } = await supabase
+    const { data: ticket, error } = await supabase
       .from('tiquetes')
-      .insert({ 
+      .insert({
         funcion_id,
-        asientos_seleccionados: asientos,
         codigo_unico: `CH-${Date.now()}`,
         estado: 'confirmada'
       })
       .select()
       .single();
 
-    if (ticketError) throw ticketError;
+    if (error) throw error;
 
-    // 3. Insert detalle_tiquete
-    const detallePromises = asientos.map(asiento => 
+    await Promise.all(asientos.map(a =>
       supabase.from('detalle_tiquete').insert({
         tiquete_id: ticket.id,
-        asiento_id: asiento
+        asiento_id: a
       })
-    );
-    await Promise.all(detallePromises);
+    ));
 
-    // 4. Mark seats occupied
-    const occupiedPromises = asientos.map(asiento => 
-      supabase.from('asientos_ocupados').insert({
-        funcion_id,
-        asiento_id: asiento
-      })
+    await supabase.from('asientos_ocupados').insert(
+      asientos.map(a => ({ funcion_id, asiento_id: a }))
     );
-    await Promise.all(occupiedPromises);
 
     res.json({ ok: true, ticket });
   } catch (error) {
-    console.error('Ticket purchase error:', error);
-    res.status(400).json({ error: error.message || "Purchase failed" });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: '✅ Backend running',
-    openai: !!process.env.OPENAI_API_KEY,
-    supabase: !!process.env.SUPABASE_URL,
-    timestamp: new Date().toISOString()
-  });
-});
-
 app.listen(port, () => {
-  console.log(`\n🎬 Cinema Backend on http://localhost:${port}`);
+  console.log(`🎬 Cinema Backend on http://localhost:${port}`);
 });
-
 

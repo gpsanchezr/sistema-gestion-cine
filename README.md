@@ -203,4 +203,4 @@ Este proyecto fue desarrollado como solución tecnológica integral, garantizand
 ---
 *Nota: Proyecto original modernizado y reestructurado profundamente.*
 
->>>>>>> 7b6f0abbb4177178bd02aae196fe7bb60dc6481a
+
